@@ -25,3 +25,8 @@ services:
     ports:
       - "5760:5760"
 
+  rosbridge-suite:
+    image: uobflightlabstarling/rosbridge-suite:latest
+    ports:
+      - "9090:9090"
+
