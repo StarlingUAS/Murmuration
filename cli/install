@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# Installs Base Starling Dependencies
-
-set -e 
-
-echo "INSTALLING"

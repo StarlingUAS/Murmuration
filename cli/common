@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+export STARLING_COMMON_SOURCED=true
+
+# Useful Environment Variables
+
+export STARLING_WORKDIR=${STARLING_WORKDIR:-}
+export STARLING_CLI_DIR="$STARLING_WORKDIR/cli"
+export STARLING_COMMANDS_DIR="$STARLING_CLI_DIR/commands"
+
+# Kuberenetes Setup
+export STARLING_KUBE_CONFIG_DIR=~/.kube
+export STARLING_KUBE_CONFIG_FILE_PATH=$STARLING_KUBE_CONFIG_DIR/config/k3s.yaml
+
+declare -a RC_FILES=(
+    ~/.zshrc
+    ~/.bashrc
+)
+export RC_FILES

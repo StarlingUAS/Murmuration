@@ -3,7 +3,10 @@ set -e
 
 STARLING_WORKDIR=$(cd "$(dirname "$0")" && pwd)
 export STARLING_WORKDIR
-CLIDIR="$STARLING_WORKDIR"/cli
+CLIDIR="$STARLING_WORKDIR/cli"
+
+# shellcheck source=./cli/common
+source "$CLIDIR/common"
 
 cli_help() {
     cli_name=${0##*/}
@@ -17,7 +20,7 @@ Usage: $cli_name [command]
 Commands:
 "
 
-for file in "$CLIDIR"/*; do
+for file in "$STARLING_COMMANDS_DIR"/*; do
     if [[ -f "$file" && -x "$file" ]]; then
         instruction="$(sed -n '2p' "$file")"
         echo -e "  $(basename "$file")\t${instruction:2}" 
@@ -31,7 +34,7 @@ exit 1
 }
 
 ## If file exists in cli dir and is executable
-file="$CLIDIR/$1"
+file="$STARLING_COMMANDS_DIR/$1"
 if [[ -f "$file" && -x "$file" ]]; then
     shift;
     exec "$file" "$@"
