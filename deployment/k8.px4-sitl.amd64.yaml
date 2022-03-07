@@ -71,5 +71,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: BRIDGE_LAUNCH_DELAY
+          value: "10.0"
       nodeSelector:
         kubernetes.io/arch: "amd64"

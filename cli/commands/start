@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#Starts Starling Server
+
+set -e 
+
+cli_help_install() {
+    echo -e "
+Command: start [kind/k3s] (options?)
+
+Usage:
+    No Arguments\t\tStarts kubernetes and deployment only
+    kind/k3s\t\tStarts kubernetes and starts the simulator deployment
+"
+}
+
+# Check if running using starling cli
+if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
+    echo "Common not sourced, please run from starling cli"
+    exit 1
+fi
+
+# Parse arguments
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help|help)
+            cli_help_install
+            exit 1
+            ;;
+        kind)
+            S_KIND=1
+            shift
+            ;;
+        k3s)
+            S_K3S=1
+            shift
+            ;;
+        *)  # unknown option
+            echo "Unknown Argument/ Option $1"
+            cli_help_install
+            exit 1
+            shift # past argument
+            ;;
+    esac
+done
+
+# Start k3s
+
+# Start kind
+if [[ $S_KIND ]]; then
+    kind create cluster --config=${STARLING_WORKDIR}/config/kind_config.yaml
+fi
+
+

@@ -38,8 +38,8 @@ do
     key="$1"
     case $key in
         -h|--help|help)
-           
-            shift # past argument
+            cli_help_install
+            exit 1
             ;;
         kubectl)
             INSTALL_KUBE=1

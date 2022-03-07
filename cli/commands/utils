@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+#Starts Starling Server
+
+set -e 
+
+cli_help_install() {
+    echo -e "
+Command: utils [command] (options)
+
+commands:
+    kind-load\t\tLoads the specified local container into kind
+
+options:
+    --name\t\tName of kind cluster (defaults to starling-cluster)
+
+"
+}
+
+# Check if running using starling cli
+if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
+    echo "Common not sourced, please run from starling cli"
+    exit 1
+fi
+
+CLUSTER_NAME="starling-cluster"
+
+# Parse arguments
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help|help)
+            cli_help_install
+            exit 1
+            ;;
+        --name)
+            CLUSTER_NAME=$2
+            shift
+            shift
+            ;;
+        kind-load)
+            KIND_LOAD=$2
+            shift
+            shift
+            ;;
+        *)  # unknown option
+            echo "Unknown Argument/ Option $1"
+            cli_help_install
+            exit 1
+            shift # past argument
+            ;;
+    esac
+done
+
+# Kind Load Image
+if [[ $KIND_LOAD ]]; then
+    echo "Loading local image '$KIND_LOAD' into $CLUSTER_NAME"
+    kind load --name "$CLUSTER_NAME" docker-image "$KIND_LOAD"
+fi
+
+

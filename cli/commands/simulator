@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+#Starts Starling Server
+
+set -e 
+
+cli_help_install() {
+    echo -e "
+Command: simulator [start/stop/set] (optional number for set)
+
+Usage:
+    No Arguments\t\tNothing 
+    start\t\tStarts gazebo iris with px4 and vehicle with specified number of vehicles
+    stop\t\tStops all simulator instances
+    set\t\tSets the number of vehicles in the simulator
+"
+}
+
+# Check if running using starling cli
+if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
+    echo "Common not sourced, please run from starling cli"
+    exit 1
+fi
+
+# Parse arguments
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help|help)
+            cli_help_install
+            exit 1
+            ;;
+        start)
+            START=1
+            shift
+            ;;
+        stop)
+            STOP=1
+            shift
+            ;;
+        set)
+            NUM_VEHICLES=$2
+            shift
+            ;;
+        *)  # unknown option
+            echo "Unknown Argument/ Option $1"
+            cli_help_install
+            exit 1
+            shift # past argument
+            ;;
+    esac
+done
+
+# Start simlator
+if [[ $START ]]; then
+    echo "Starting simulator"
+    kubectl apply -f "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
+    kubectl apply -f "${STARLING_WORKDIR}/deployment/k8.px4-sitl.amd64.yaml"
+fi
+
+# Stop simlator
+if [[ $STOP ]]; then
+    echo "Stopping simulator"
+    kubectl delete -f "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
+    kubectl delete -f "${STARLING_WORKDIR}/deployment/k8.px4-sitl.amd64.yaml"
+fi
+
+if [[ $NUM_VEHICLES ]]; then
+    echo "Attempting to scale number of vehicles"
+    echo "(Note scaling down might require a restart)"
+    kubectl scale statefulsets starling-px4-sitl --replicas=$NUM_VEHICLES
+fi
