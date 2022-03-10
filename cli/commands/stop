@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #Starts Starling Server
 
-set -e 
+set -e
 
 cli_help_install() {
     echo -e "
@@ -10,6 +10,7 @@ Command: stop [kind/k3s] (optional)
 Usage:
     No Arguments\t\tStarts kubernetes and deployment only
     kind/k\t\tStarts kubernetes and starts the simulator deployment
+    dashboard\t\tStarts kubernetes dashboard
 
 Optional Arguments
     --name\t\tName of cluster to delete (kind)
@@ -44,6 +45,10 @@ do
             S_K3S=1
             shift
             ;;
+        dashboard)
+            S_DASH=1
+            shift
+            ;;
         *)  # unknown option
             echo "Unknown Argument/ Option $1"
             cli_help_install
@@ -60,5 +65,13 @@ if [[ $S_KIND ]]; then
     kind delete cluster --name="${CLUSTER_NAME:-starling-cluster}"
 fi
 
-
-
+# Start Dashboard
+if [[ $S_DASH ]]; then
+    echo "Deleting Kubernetes Dashboard"
+    echo "==================="
+    GITHUB_URL=https://github.com/kubernetes/dashboard/releases
+    VERSION_KUBE_DASHBOARD=$(curl -w '%{url_effective}' -I -L -s -S ${GITHUB_URL}/latest -o /dev/null | sed -e 's|.*/||')
+    kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/${VERSION_KUBE_DASHBOARD}/aio/deploy/recommended.yaml
+    kubectl delete -f ${STARLING_WORKDIR}/deployment/resources/dashboard.admin.yaml #dashboard.admin-user.yml -f deployment/resources/dashboard.admin-user-role.yml
+    echo "==================="
+fi
