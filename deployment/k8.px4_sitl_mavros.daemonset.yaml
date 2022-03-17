@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: starling-px4-mavros-daemon
+  labels:
+    app: starling
+
+spec:
+  selector:
+    matchLabels:
+      name: starling-px4-mavros-daemon
+
+  template:
+    metadata:
+      labels:
+        name: starling-px4-mavros-daemon
+
+    spec:
+      nodeSelector:
+        starling.dev/type: vehicle
+
+      tolerations:
+        - key: starling.dev/type
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule
+
+      hostNetwork: true
+      shareProcessNamespace: true
+      initContainers:
+      - name: gazebo-spawn-iris
+        image: uobflightlabstarling/starling-sim-iris:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash"]
+        args: ["-c", "source /etc/starling/vehicle.config; /entrypoint.sh ./spawn_iris.sh" ]
+        env:
+        - name: PX4_INSTANCE_BASE
+          value: "200"
+        - name: IGNORE_FAILURE
+          value: "true"
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - mountPath: /etc/starling/vehicle.config
+          name: vehicleconfig
+          readOnly: true
+      containers:
+        - name: starling-mavros
+          image: uobflightlabstarling/starling-mavros:latest
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          env:
+          - name: MAVROS_TGT_FIRMWARE
+            value: "px4"
+          - name: MAVROS_TGT_SYSTEM
+            value: "auto" # Look up on system /etc/drone.config
+          - name: PX4_INSTANCE_BASE
+            value: "200"
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          volumeMounts:
+          - mountPath: /etc/starling/vehicle.config
+            name: vehicleconfig
+            readOnly: true
+        - name: starling-simple-offboard
+          image: uobflightlabstarling/starling-simple-offboard:latest
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: VEHICLE_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name # Pod name
+      volumes:
+        - name: vehicleconfig
+          hostPath:
+            path: /etc/starling/vehicle.config
+            type: File

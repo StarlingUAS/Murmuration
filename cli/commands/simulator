@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 #Starts Starling Server
 
-set -e 
+set -e
 
 cli_help_install() {
     echo -e "
 Command: simulator [start/stop/set] (optional number for set)
 
 Usage:
-    No Arguments\t\tNothing 
+    No Arguments\t\tNothing
     start\t\tStarts gazebo iris with px4 and vehicle with specified number of vehicles
     stop\t\tStops all simulator instances
     set\t\tSets the number of vehicles in the simulator
+    load\t\tLoads local docker images into kind
 "
 }
 
@@ -38,8 +39,13 @@ do
             STOP=1
             shift
             ;;
+        load)
+            LOAD=1
+            shift
+            ;;
         set)
             NUM_VEHICLES=$2
+            shift
             shift
             ;;
         *)  # unknown option
@@ -51,18 +57,51 @@ do
     esac
 done
 
+SIMULATOR_DEPLOYMENT_LIST=(
+    "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
+    "${STARLING_WORKDIR}/deployment/k8.px4_sitl_mavros.daemonset.yaml"
+);
+
+if [[ $LOAD ]]; then
+    images=()
+    echo "Finding images in deployment files"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        readarray image_lines < <(grep "image:" "$file")
+        # image_lines=("$(grep "image:" $file)")
+        for i in "${image_lines[@]}"; do
+            a1="$( echo "$i" | xargs | cut -c8- )"
+            if [[ ! "${images[*]}" =~ "${a1}" ]]; then
+                # whatever you want to do when array doesn't contain value
+                echo "Found Image Reference: '$a1'"
+                images+=( "$a1" )
+            else
+                echo "Not Adding Image Already Found $a1"
+            fi
+
+        done
+    done
+    echo
+    echo "Copying local containers across"
+    for i in "${images[@]}"; do
+        bash "${STARLING_WORKDIR}/starling" utils kind-load "$i"
+    done
+    echo "All containers loaded"
+fi
+
 # Start simlator
 if [[ $START ]]; then
     echo "Starting simulator"
-    kubectl apply -f "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
-    kubectl apply -f "${STARLING_WORKDIR}/deployment/k8.px4-sitl.amd64.yaml"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        kubectl apply -f "$file"
+    done
 fi
 
 # Stop simlator
 if [[ $STOP ]]; then
     echo "Stopping simulator"
-    kubectl delete -f "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
-    kubectl delete -f "${STARLING_WORKDIR}/deployment/k8.px4-sitl.amd64.yaml"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        kubectl delete -f "$file"
+    done
 fi
 
 if [[ $NUM_VEHICLES ]]; then

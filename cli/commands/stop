@@ -63,6 +63,9 @@ done
 # STOP kind
 if [[ $S_KIND ]]; then
     kind delete cluster --name="${CLUSTER_NAME:-starling-cluster}"
+
+    # remove temp folder
+    rm -r "${STARLING_TMP_DIR}"
 fi
 
 # Start Dashboard

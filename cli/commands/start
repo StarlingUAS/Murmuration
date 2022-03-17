@@ -11,6 +11,9 @@ Usage:
     No Arguments\t\tStarts kubernetes and deployment only
     kind/k3s\t\tStarts kubernetes and starts the simulator deployment
     dashboard\t\tStarts kubernetes dashboard
+
+Options
+    --num_vehicles -n\t Maximum number of vehicles to start
 "
 }
 
@@ -20,6 +23,7 @@ if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
     exit 1
 fi
 
+NUM_VEH=1
 # Parse arguments
 while [[ $# -gt 0 ]]
 do
@@ -28,6 +32,11 @@ do
         -h|--help|help)
             cli_help_install
             exit 1
+            ;;
+        -n|--num_vehicles)
+            NUM_VEH=$2
+            shift
+            shift
             ;;
         kind)
             S_KIND=1
@@ -54,7 +63,38 @@ done
 
 # Start kind
 if [[ $S_KIND ]]; then
-    kind create cluster --config=${STARLING_WORKDIR}/config/kind_config.yaml
+    ## Determine number of vehicles (default 1)
+    echo "Number of vehicles set to $NUM_VEH"
+
+    ## Write Vehicle Configuration files into tmp folder after creating tmp folder
+    ## These mirror the config files found on real vehicles
+    mkdir -p "${STARLING_TMP_DIR}"
+    for (( idx=1; idx<=NUM_VEH; idx++ )); do
+        CONFPATH="${STARLING_TMP_DIR}/vehicle${NUM_VEH}.config"
+        touch "$CONFPATH"
+        { echo "PX4_INSTANCE=${NUM_VEH}";
+          echo "PX4_SIM_INIT_LOC_X=${NUM_VEH}";
+          echo "VEHICLE_FIRMWARE=px4";
+          echo "VEHICLE_MAVLINK_SYSID=${NUM_VEH}";
+          echo "VEHICLE_NAME=vehicle${NUM_VEH}";} > "$CONFPATH"
+    done
+
+    ## Write vehicle configurations and labels into kind config copy into tmp
+    cp "${STARLING_CONFIG_DIR}/kind_config.yaml" "${STARLING_TMP_DIR}/kind_config.yaml"
+    for (( idx=1; idx<=NUM_VEH; idx++ )); do
+echo "
+- role: worker
+  labels:
+    starling.dev/type: vehicle
+  extraMounts:
+  - hostPath: ${STARLING_TMP_DIR}/vehicle${NUM_VEH}.config
+    containerPath: /etc/starling/vehicle.config
+    readOnly: true
+" >> "${STARLING_TMP_DIR}/kind_config.yaml"
+    done
+
+    ## Start cluster with new configuration
+    kind create cluster --config="${STARLING_TMP_DIR}/kind_config.yaml"
 fi
 
 # Start Dashboard
