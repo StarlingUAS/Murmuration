@@ -74,9 +74,10 @@ if [[ $S_KIND ]]; then
         touch "$CONFPATH"
         { echo "PX4_INSTANCE=${idx}";
           echo "PX4_SIM_INIT_LOC_X=$((idx-1))";
+          echo "VEHICLE_FCU_URL=udp://127.0.0.1:$((14830+idx-1))@/"
           echo "VEHICLE_FIRMWARE=px4";
           echo "VEHICLE_MAVLINK_SYSID=${idx}";
-          echo "VEHICLE_NAME=vehicle${idx}";} > "$CONFPATH"
+          echo "VEHICLE_NAME=vehicle_${idx}";} > "$CONFPATH"
     done
 
     ## Write vehicle configurations and labels into kind config copy into tmp

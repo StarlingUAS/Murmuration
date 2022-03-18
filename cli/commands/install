@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs Base Starling Dependencies
 
-set -e 
+set -e
 
 cli_help_install() {
     echo -e "
@@ -23,6 +23,8 @@ Options for install kube (and k3s):
 Options for installing k3s
     --node-external-ip ip\t\tSpecify the external facing IP address of the k3s server in case of multiple networks.
 
+Options for installing kind
+    --install-folder\t\tSpecify the folder to install kind into, defaults to /usr/local/bin which requires sudo
 "
 }
 
@@ -45,9 +47,18 @@ do
             INSTALL_KUBE=1
             shift
             ;;
+        kind)
+            INSTALL_KIND=1
+            shift
+            ;;
         k3s)
             INSTALL_KUBE=1
             INSTALL_K3S=1
+            shift
+            ;;
+        --install-folder)
+            KIND_INSTALL_FOLDER=$2
+            shift
             shift
             ;;
         --skip-docker)
@@ -55,7 +66,7 @@ do
             shift
             ;;
         --config-file)
-            STARLING_KUBE_CONFIG_FILE_PATH=$2 
+            STARLING_KUBE_CONFIG_FILE_PATH=$2
             shift
             shift
             ;;
@@ -87,7 +98,7 @@ if  [[ ! $SKIP_DOCKER && ! "$(command -v docker &> /dev/null)" ]]; then
     dockerd-rootless-setuptool.sh install
     for rcfile in "${RC_FILES[@]}"; do
         if [[ -f $rcfile ]]; then
-            { 
+            {
                 export XDG_RUNTIME_DIR=/home/docker/.docker/run;
                 export PATH=/usr/bin:$PATH;
                 export DOCKER_HOST=unix:///home/docker/.docker/run/docker.sock;
@@ -97,6 +108,15 @@ if  [[ ! $SKIP_DOCKER && ! "$(command -v docker &> /dev/null)" ]]; then
 
 else
     echo "Docker already exists, skipping install"
+fi
+
+# Install Kind
+if [[ $INSTALL_KIND ]]; then
+    install_location="${KIND_INSTALL_FOLDER:-"/usr/local/bin/"}"
+    echo "Installing kind for linux to $install_location. If unsucessful, see https://kind.sigs.k8s.io/docs/user/quick-start/#installing-from-release-binaries"
+    curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.12.0/kind-linux-amd64
+    chmod +x ./kind
+    sudo mv ./kind "${install_location}"
 fi
 
 # Install k3s
@@ -118,7 +138,7 @@ if [[ $INSTALL_KUBE || $INSTALL_K3S ]]; then
     fi
 
     # Only needs to be run once per system
-    # Download and start kubernetes master node 
+    # Download and start kubernetes master node
     echo "Downloading and Installing K3s in systemd"
     echo "The configuration file will be placed in $CONFIGFILE"
     echo "root is required for initial installation (running of the kubernetes systemd)"
@@ -148,4 +168,3 @@ if [[ $INSTALL_KUBE || $INSTALL_K3S ]]; then
     done
     echo "K3s or kubectl install complete"
 fi
-

@@ -34,8 +34,8 @@ spec:
         command: ["/bin/bash"]
         args: ["-c", "source /etc/starling/vehicle.config; /entrypoint.sh ./spawn_iris.sh" ]
         env:
-        - name: PX4_INSTANCE_BASE
-          value: "200"
+        # - name: PX4_INSTANCE_BASE
+        #   value: "200"
         - name: IGNORE_FAILURE
           value: "true"
         - name: HOSTNAME
@@ -57,8 +57,10 @@ spec:
             value: "px4"
           - name: MAVROS_TGT_SYSTEM
             value: "auto" # Look up on system /etc/drone.config
-          - name: PX4_INSTANCE_BASE
-            value: "200"
+          - name: ROS_HOSTNAME # Required for ROS1 bridge in hostNetwork mode
+            value: "localhost" # ROS1 will ping HOSTNAME, defaults to system hostname
+          - name: ROS_MASTER_URI
+            value: "http://localhost:11311"
           - name: HOSTNAME
             valueFrom:
               fieldRef:
@@ -70,11 +72,6 @@ spec:
         - name: starling-simple-offboard
           image: uobflightlabstarling/starling-simple-offboard:latest
           imagePullPolicy: IfNotPresent
-          env:
-          - name: VEHICLE_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name # Pod name
       volumes:
         - name: vehicleconfig
           hostPath:

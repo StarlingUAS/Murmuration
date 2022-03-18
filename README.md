@@ -34,10 +34,13 @@ sudo ./starling install
 
 #### Multi-Vehicle Local testing (step 2)
 
-For this we utilise kubernetes in docker, a.k.a *kind*.
+For this we utilise kubernetes in docker, a.k.a *kind* [link](https://kind.sigs.k8s.io/docs/user/quick-start/):
 ```console
 sudo ./starling install kind
 ```
+
+This is an application which will allow us to test out kubernetes deployments within a docker container without needing to install kubernetes elements locally. It also allows windows and mac users to develop starling applications as well.
+
 
 
 
