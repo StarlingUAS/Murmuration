@@ -5,14 +5,17 @@ set -e
 
 cli_help_install() {
     echo -e "
-Command: simulator [start/stop/set] (optional number for set)
+Command: simulator [Command] (arguments)
 
-Usage:
+commands:
     No Arguments\t\tNothing
     start\t\tStarts gazebo iris with px4 and vehicle with specified number of vehicles
     stop\t\tStops all simulator instances
     set\t\tSets the number of vehicles in the simulator
     load\t\tLoads local docker images into kind
+
+Arguments:
+    --load\t\tAlso loads local docker images into kind, use with start
 "
 }
 
@@ -39,7 +42,7 @@ do
             STOP=1
             shift
             ;;
-        load)
+        load|--load)
             LOAD=1
             shift
             ;;

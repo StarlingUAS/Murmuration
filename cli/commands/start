@@ -70,13 +70,13 @@ if [[ $S_KIND ]]; then
     ## These mirror the config files found on real vehicles
     mkdir -p "${STARLING_TMP_DIR}"
     for (( idx=1; idx<=NUM_VEH; idx++ )); do
-        CONFPATH="${STARLING_TMP_DIR}/vehicle${NUM_VEH}.config"
+        CONFPATH="${STARLING_TMP_DIR}/vehicle${idx}.config"
         touch "$CONFPATH"
-        { echo "PX4_INSTANCE=${NUM_VEH}";
-          echo "PX4_SIM_INIT_LOC_X=${NUM_VEH}";
+        { echo "PX4_INSTANCE=${idx}";
+          echo "PX4_SIM_INIT_LOC_X=$((idx-1))";
           echo "VEHICLE_FIRMWARE=px4";
-          echo "VEHICLE_MAVLINK_SYSID=${NUM_VEH}";
-          echo "VEHICLE_NAME=vehicle${NUM_VEH}";} > "$CONFPATH"
+          echo "VEHICLE_MAVLINK_SYSID=${idx}";
+          echo "VEHICLE_NAME=vehicle${idx}";} > "$CONFPATH"
     done
 
     ## Write vehicle configurations and labels into kind config copy into tmp
@@ -87,14 +87,14 @@ echo "
   labels:
     starling.dev/type: vehicle
   extraMounts:
-  - hostPath: ${STARLING_TMP_DIR}/vehicle${NUM_VEH}.config
+  - hostPath: ${STARLING_TMP_DIR}/vehicle${idx}.config
     containerPath: /etc/starling/vehicle.config
     readOnly: true
 " >> "${STARLING_TMP_DIR}/kind_config.yaml"
     done
 
     ## Start cluster with new configuration
-    kind create cluster --config="${STARLING_TMP_DIR}/kind_config.yaml"
+    # kind create cluster --config="${STARLING_TMP_DIR}/kind_config.yaml"
 fi
 
 # Start Dashboard
