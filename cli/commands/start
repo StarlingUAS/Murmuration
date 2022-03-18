@@ -94,7 +94,7 @@ echo "
     done
 
     ## Start cluster with new configuration
-    # kind create cluster --config="${STARLING_TMP_DIR}/kind_config.yaml"
+    kind create cluster --config="${STARLING_TMP_DIR}/kind_config.yaml"
 fi
 
 # Start Dashboard
