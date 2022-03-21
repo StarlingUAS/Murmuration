@@ -69,20 +69,91 @@ If you are looking to experiment with a multi-drone system, you can specify the 
 ./starling start kind -n 3
 ```
 
-Once started, you can start the monitoring dashboard using
-
-```
-./starling start dashboard
-```
-
 To stop the cluster, simply run the following. Note that this will delete all changes within the kind cluster and maybe require re-setup.
 ```
 ./starling stop kind
 ```
 
+#### Monitoring:
+
+
+> For more details, see the [following tutorial](https://docs.starlinguas.dev/details/kubernetes-dashboard/) for an illustrated guide.
+
+Once started, you can start the monitoring dashboard using the following command:
+
+```
+./starling start dashboard
+```
+
+This will start up the [kubernetes dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/). To access the dashboard, open up a browser and go to https://localhost:31771.
+
+> Note the browser may not like the security, we promise it is safe to access! If you click 'advanced options' and 'continue to website' you should be able to access the website.
+
+To log on, the above command should show something like the following:
+```console
+The Dashboard is available at https://localhost:31771
+You will need the dashboard token, to access it.
+Copy and paste the token from below
+-----BEGIN DASHBOARD TOKEN-----
+<LONG TOKEN>
+-----END DASHBOARD TOKEN-----
+Note: your browser may not like the self signed ssl certificate, ignore and continue for now
+To get the token yourself run: kubectl -n kubernetes-dashboard describe secret admin-user-token
+```
+You can copy the `<LONG TOKEN>` and paste it into the dashboard token. You can also get the access token again by running:
+```
+./starling utils get-dashboard-token
+```
+
+You can also monitor the system using
+```bash
+./starling status
+# or to continually watch
+./starling status --watch
+```
+
+And finally, you can inspect the system using the standard [`kubectl` commands](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+
 #### Running the simulator
 
+Once the simulator in kind has started, we can start the general simulator.
 
+> **IMPORTANT**: The simulator can potentially be resource heavy to run. This is with respect to both CPU usage and RAM. Before going further, please ensure you have enough space on your primary drive (at least 30Gb to be safe, especially C drive on windows). This is especially true if running multiple vehicles. It is not recommended to run more than around 6.
+
+First we should load or download the required simulation containers locally. This can be done using the follwoing command. We need to run the load command as we want to load the local container images into the kind container. This avoids the need for the kind containers to download the containers themselves at each runtime.
+
+> This command can take as long as 30 minutes depending on internet connection. It goes through the deployment files and downloads a couple of large containers e.g. the gazebo and sitl containers.
+```
+./starling simulator load
+```
+
+Once containers are downloaded and loaded into Kind, we can start the simulator containers using the following:
+
+```bash
+./starling simulator start
+# or to do both steps at the same time:
+./starling simulator start --load
+```
+
+Once run, you can monitor the deployments on the kubernetes dashboard. In particular you can inspect the **worloads** -> **pods**. If they show green the systems should hopefully have started correctly.
+
+> Again, see [this illustrated guide](https://docs.starlinguas.dev/details/kubernetes-dashboard/) to the dashboard
+
+> Note, if the load was unsucessful, or had issues, some containers might take a while to download starling containers.
+
+Once started, the simulator should be available to inspect from https://localhost:8080
+
+At this point, you can run your own deployments or some of the examples.
+
+If at any point, you want to restart the simulation, you can run the following. This will delete the starling simulator containers, and then start them again.
+```bash
+./starling simulator restart
+```
+
+If you want to stop the simulation, simply run
+```bash
+./starling simulator stop
+```
 
 ## Docker-Compose
 

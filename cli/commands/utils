@@ -9,6 +9,7 @@ Command: utils [command] (options)
 
 commands:
     kind-load\t\tLoads the specified local container into kind
+    get-dashboard-token\t\tGet the dashboard entry token
 
 options:
     --name\t\tName of kind cluster (defaults to starling-cluster)
@@ -45,6 +46,10 @@ do
             shift
             shift
             ;;
+        get-dashboard-token)
+            DASH_TOKEN=1
+            shift
+            ;;
         --load-control-plane)
             KIND_LOAD_CONTROL_PLANE=1
             shift
@@ -75,4 +80,8 @@ if [[ $KIND_LOAD ]]; then
             docker pull "$KIND_LOAD"
         fi
     done
+fi
+
+if [[ $DASH_TOKEN ]]; then
+    kubectl -n kubernetes-dashboard describe secret admin-user-token | grep ^token | cut -c 13-
 fi
