@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+#Starts Starling Server
+
+set -e
+
+cli_help_install() {
+    echo -e "
+Command: utils [command] (options)
+
+commands:
+    kind-load\t\tLoads the specified local container into kind
+    get-dashboard-token\t\tGet the dashboard entry token
+
+options:
+    --name\t\tName of kind cluster (defaults to starling-cluster)
+    --load-control-plane\t\tLoad onto control plane
+    --load-workers\t\tLoad onto workers
+
+"
+}
+
+# Check if running using starling cli
+if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
+    echo "Common not sourced, please run from starling cli"
+    exit 1
+fi
+
+CLUSTER_NAME="starling-cluster"
+
+# Parse arguments
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help|help)
+            cli_help_install
+            exit 1
+            ;;
+        --name)
+            CLUSTER_NAME=$2
+            shift
+            shift
+            ;;
+        kind-load)
+            KIND_LOAD=$2
+            shift
+            shift
+            ;;
+        get-dashboard-token)
+            DASH_TOKEN=1
+            shift
+            ;;
+        --load-control-plane)
+            KIND_LOAD_CONTROL_PLANE=1
+            shift
+            ;;
+        --load-workers)
+            KIND_LOAD_WORKERS=1
+            shift
+            ;;
+        *)  # unknown option
+            echo "Unknown Argument/ Option $1"
+            cli_help_install
+            exit 1
+            ;;
+    esac
+done
+
+# Kind Load Image
+if [[ $KIND_LOAD ]]; then
+    echo "Loading local image '$KIND_LOAD' into $CLUSTER_NAME"
+    NODES=""
+    if [[ $KIND_LOAD_CONTROL_PLANE ]]; then
+        NODES="${NODES},starling-cluster-control-plane"
+    fi
+    for i in {1..3}; do
+        if kind load --name "$CLUSTER_NAME" docker-image "$KIND_LOAD" --nodes "${NODES}"; then
+            break
+        else
+            docker pull "$KIND_LOAD"
+        fi
+    done
+fi
+
+if [[ $DASH_TOKEN ]]; then
+    kubectl -n kubernetes-dashboard describe secret admin-user-token | grep ^token | cut -c 13-
+fi

@@ -15,12 +15,14 @@ spec:
         app: gazebo
         version: v1
     spec:
-      # hostname: sim-gazebo
-      # subdomain: gazebo-srv
       hostNetwork: true
       shareProcessNamespace: true
       nodeSelector:
-          beta.kubernetes.io/arch: "amd64"
+        name: master
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
       containers:
       - name: gazebo
         image: uobflightlabstarling/starling-sim-iris:latest

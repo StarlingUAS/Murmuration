@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+#Starts Starling Server
+
+set -e
+
+cli_help_install() {
+    echo -e "
+Command: simulator [Command] (arguments)
+
+commands:
+    No Arguments\t\tNothing
+    start\t\tStarts gazebo iris with px4 and vehicle with specified number of vehicles
+    stop\t\tStops all simulator instances
+    restart\t\tRestarts the simulator
+    set\t\tSets the number of vehicles in the simulator
+    load\t\tLoads local docker images into kind
+
+Arguments:
+    --load\t\tAlso loads local docker images into kind, use with start
+"
+}
+
+# Check if running using starling cli
+if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
+    echo "Common not sourced, please run from starling cli"
+    exit 1
+fi
+
+# Parse arguments
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help|help)
+            cli_help_install
+            exit 1
+            ;;
+        start)
+            START=1
+            shift
+            ;;
+        stop)
+            STOP=1
+            shift
+            ;;
+        restart)
+            START=1
+            STOP=1
+            shift
+            ;;
+        load|--load)
+            LOAD=1
+            shift
+            ;;
+        set)
+            NUM_VEHICLES=$2
+            shift
+            shift
+            ;;
+        *)  # unknown option
+            echo "Unknown Argument/ Option $1"
+            cli_help_install
+            exit 1
+            shift # past argument
+            ;;
+    esac
+done
+
+SIMULATOR_DEPLOYMENT_LIST=(
+    "${STARLING_WORKDIR}/kubernetes/simulation/k8.gazebo-iris.amd64.yaml"
+    "${STARLING_WORKDIR}/kubernetes/simulation/k8.px4-sitl.daemonset.yaml"
+    "${STARLING_WORKDIR}/kubernetes/k8.mavros.daemonset.yaml"
+);
+
+if [[ $LOAD ]]; then
+    images=()
+    echo "Finding images in deployment files"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        readarray image_lines < <(grep "image:" "$file")
+        # image_lines=("$(grep "image:" $file)")
+        for i in "${image_lines[@]}"; do
+            a1="$( echo "$i" | xargs | cut -c8- )"
+            if [[ ! "${images[*]}" =~ "${a1}" ]]; then
+                # whatever you want to do when array doesn't contain value
+                echo "Found Image Reference: '$a1'"
+                images+=( "$a1" )
+            else
+                echo "Not Adding Image Already Found $a1"
+            fi
+
+        done
+    done
+    echo
+    echo "Copying local containers across"
+    for i in "${images[@]}"; do
+        bash "${STARLING_WORKDIR}/starling" utils kind-load "$i"
+    done
+    echo "All containers loaded"
+fi
+
+# Stop simlator
+if [[ $STOP ]]; then
+    echo "Stopping simulator"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        kubectl delete -f "$file"
+    done
+fi
+
+
+# Start simlator
+if [[ $START ]]; then
+    echo "Starting simulator"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        kubectl apply -f "$file"
+    done
+fi
+
+
+if [[ $NUM_VEHICLES ]]; then
+    echo "Attempting to scale number of vehicles"
+    echo "(Note scaling down might require a restart)"
+    kubectl scale statefulsets starling-px4-sitl --replicas=$NUM_VEHICLES
+fi
