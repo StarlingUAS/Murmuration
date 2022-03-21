@@ -27,16 +27,25 @@ git clone https://github.com/StarlingUAS/Murmuration.git
 
 In the root of the repository, there is the core cli script named `starling`. `starling` includes a further installation script to help install further requirements. This installation script will need to be run using root. See the following guide on which arguments you should give.
 
+> If running within Murmuration, swap `starling` for `./starling`. However for convenience, you can put `starling` onto your path. This can be done by adding `export PATH=<Path to murmuration>:$PATH` into `~/.bashrc` and `source ~/.bashrc` , or running the same command locally in the terminal. Then you can use the below commands verbatim.
+
 #### Only local development (step 1)
+To install the bare minimum requirements of starling, run the following.
 ```console
-sudo ./starling install
+sudo starling install
 ```
+This will
+
+- Update the system
+- Install python3, pip, curl, udmap and a python utility called click
+- Add the Mumuration directory to your path so you can run starling from anywhere
+- Install docker
 
 #### Multi-Vehicle Local testing (step 2)
 
 For this we utilise kubernetes in docker, a.k.a *kind* [link](https://kind.sigs.k8s.io/docs/user/quick-start/):
 ```console
-sudo ./starling install kind
+sudo starling install kind
 ```
 
 This is an application which will allow us to test out kubernetes deployments within a docker container without needing to install kubernetes elements locally. It also allows windows and mac users to develop starling applications as well.
@@ -48,10 +57,27 @@ The final step allows you to setup the setup used in the flight arena using mult
 > This is not recommended for most users. Most should be able to use kind for testing, to then deploy straight in the flight arena.
 
 ```console
-sudo ./starling install k3s
+sudo starling install k3s
 ```
 
 ### Docker-Compose Usage
+
+The `starling` utility is made up of a number of useful scripts which can be used together to run the simulation and your own controllers. Using `starling` with `docker-compose` is very simple and essentially a drop in replacement.
+
+Once `starling` has installed, a docker compose configuration yaml file can be run with the following command:
+```bash
+starling deploy -f <docker compose file>
+# e.g.
+starling deploy -f docker-compose.px4.yaml
+# or if the system needs to build a local container
+starling deploy -f docker-compose.px4.yaml --build
+```
+
+The container can then be stopped by pressing `CTRL+C`.
+
+If other docker-compose commands are required, you can just use the `docker-compose` cli.
+
+If you want to run a container standalone, please refer to normal usage of `docker run ....`.
 
 ### Kind Usage
 
@@ -61,17 +87,17 @@ The `starling` utility is made up of a number of useful scripts which can be use
 
 Running the following will give you a single drone cluster
 ```
-./starling start kind
+starling start kind
 ```
 
 If you are looking to experiment with a multi-drone system, you can specify the number using the `-n` option. For example for a 3 node (drone) cluster
 ```
-./starling start kind -n 3
+starling start kind -n 3
 ```
 
 To stop the cluster, simply run the following. Note that this will delete all changes within the kind cluster and maybe require re-setup.
 ```
-./starling stop kind
+starling stop kind
 ```
 
 #### Monitoring:
@@ -82,7 +108,7 @@ To stop the cluster, simply run the following. Note that this will delete all ch
 Once started, you can start the monitoring dashboard using the following command:
 
 ```
-./starling start dashboard
+starling start dashboard
 ```
 
 This will start up the [kubernetes dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/). To access the dashboard, open up a browser and go to https://localhost:31771.
@@ -102,14 +128,14 @@ To get the token yourself run: kubectl -n kubernetes-dashboard describe secret a
 ```
 You can copy the `<LONG TOKEN>` and paste it into the dashboard token. You can also get the access token again by running:
 ```
-./starling utils get-dashboard-token
+starling utils get-dashboard-token
 ```
 
 You can also monitor the system using
 ```bash
-./starling status
+starling status
 # or to continually watch
-./starling status --watch
+starling status --watch
 ```
 
 And finally, you can inspect the system using the standard [`kubectl` commands](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
@@ -123,16 +149,19 @@ Once the simulator in kind has started, we can start the general simulator.
 First we should load or download the required simulation containers locally. This can be done using the follwoing command. We need to run the load command as we want to load the local container images into the kind container. This avoids the need for the kind containers to download the containers themselves at each runtime.
 
 > This command can take as long as 30 minutes depending on internet connection. It goes through the deployment files and downloads a couple of large containers e.g. the gazebo and sitl containers.
+
+> If the container doesn't already exist locally, it will attempt to download it from docker hub
+
 ```
-./starling simulator load
+starling simulator load
 ```
 
 Once containers are downloaded and loaded into Kind, we can start the simulator containers using the following:
 
 ```bash
-./starling simulator start
+starling simulator start
 # or to do both steps at the same time:
-./starling simulator start --load
+starling simulator start --load
 ```
 
 Once run, you can monitor the deployments on the kubernetes dashboard. In particular you can inspect the **worloads** -> **pods**. If they show green the systems should hopefully have started correctly.
@@ -147,13 +176,56 @@ At this point, you can run your own deployments or some of the examples.
 
 If at any point, you want to restart the simulation, you can run the following. This will delete the starling simulator containers, and then start them again.
 ```bash
-./starling simulator restart
+starling simulator restart
 ```
 
 If you want to stop the simulation, simply run
 ```bash
-./starling simulator stop
+starling simulator stop
 ```
+
+#### Deploying containers
+
+The primary usage of starling is to test your local containers. To do so, please follow the following steps.
+
+First, if it is a local container - a container image which exists on your local machine either through having pulled it from docker hub, or built locally - you will need to load that image into kind. Each time you rebuild or change the image, you will need to load it into kind. This can be achieved using the following command:
+
+> Note: If the container doesnt exist locally it will automatically try and download it from docker hub
+
+```bash
+starling utils kind-load <container name>
+# e.g.
+starling utils kind-load uobflightlabstarling/starling-mavros:latest
+```
+
+Secondly, you will need to write a kubernetes deployment file known as a kubeconfig. A kubeconfig is a yaml file which specifies what sort of deployment you want, along with many options (where to run your controller etc.). For now, see the *deployment* folder and the repositories in StarlingUAS for examples. In particular we mention the existence of two types of deployment:
+
+1. **Deployment**: This specfies the self-healing deployment of one *pod* (a.k.a a collection of containers) to a node.
+2. **DaemonSet**: This specifies the self-healing automatic deployment of a pod to all nodes which match a given specification. Use this for a deployment to all vehicles.
+
+Once a kubernetes configuration has been written, it can be deployed to kind.
+```bash
+starling deploy -k <path to kubeconfig file> start
+```
+
+> *Note* if you have added starling to path (through standard installation or otherwise), you can run this from any directory, in particular the directory of the project you wish to deploy. If you haven't, you may need to give a full absolute path.
+
+> *Note* if kind is not active or installed, `starling deploy` will interpret commands for `docker-compose`.
+
+To stop or restart a deployment you can use the following:
+```bash
+starling deploy -k <path to kubeconfig file> stop
+starling deploy -k <path to kubeconfig file> restart
+```
+
+To restart a deployment with an update to the container, you just need to ensure you have loaded it in before you restart:
+```bash
+starling utils kind-load <container name>
+starling deploy -k <path to kubeconfig file> restart
+```
+
+Again, use the dashboard to monitor the status of your deployment
+
 
 ## Docker-Compose
 
