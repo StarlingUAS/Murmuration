@@ -11,6 +11,7 @@ commands:
     No Arguments\t\tNothing
     start\t\tStarts gazebo iris with px4 and vehicle with specified number of vehicles
     stop\t\tStops all simulator instances
+    restart\t\tRestarts the simulator
     set\t\tSets the number of vehicles in the simulator
     load\t\tLoads local docker images into kind
 
@@ -42,6 +43,11 @@ do
             STOP=1
             shift
             ;;
+        restart)
+            START=1
+            STOP=1
+            shift
+            ;;
         load|--load)
             LOAD=1
             shift
@@ -62,7 +68,8 @@ done
 
 SIMULATOR_DEPLOYMENT_LIST=(
     "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
-    "${STARLING_WORKDIR}/deployment/k8.px4_sitl_mavros.daemonset.yaml"
+    "${STARLING_WORKDIR}/deployment/k8.px4_sitl.daemonset.yaml"
+    "${STARLING_WORKDIR}/deployment/k8.mavros.daemonset.yaml"
 );
 
 if [[ $LOAD ]]; then
@@ -91,6 +98,15 @@ if [[ $LOAD ]]; then
     echo "All containers loaded"
 fi
 
+# Stop simlator
+if [[ $STOP ]]; then
+    echo "Stopping simulator"
+    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
+        kubectl delete -f "$file"
+    done
+fi
+
+
 # Start simlator
 if [[ $START ]]; then
     echo "Starting simulator"
@@ -99,13 +115,6 @@ if [[ $START ]]; then
     done
 fi
 
-# Stop simlator
-if [[ $STOP ]]; then
-    echo "Stopping simulator"
-    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
-        kubectl delete -f "$file"
-    done
-fi
 
 if [[ $NUM_VEHICLES ]]; then
     echo "Attempting to scale number of vehicles"

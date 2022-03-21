@@ -41,6 +41,46 @@ sudo ./starling install kind
 
 This is an application which will allow us to test out kubernetes deployments within a docker container without needing to install kubernetes elements locally. It also allows windows and mac users to develop starling applications as well.
 
+#### Multi-Vehicle Multi-Computer Setup
+
+The final step allows you to setup the setup used in the flight arena using multiple physical machines. For this, we utilise k3s.
+
+> This is not recommended for most users. Most should be able to use kind for testing, to then deploy straight in the flight arena.
+
+```console
+sudo ./starling install k3s
+```
+
+### Docker-Compose Usage
+
+### Kind Usage
+
+The `starling` utility is made up of a number of useful scripts which can be used together to run the simulation and your own controllers
+
+#### Starting or stopping the kind cluster
+
+Running the following will give you a single drone cluster
+```
+./starling start kind
+```
+
+If you are looking to experiment with a multi-drone system, you can specify the number using the `-n` option. For example for a 3 node (drone) cluster
+```
+./starling start kind -n 3
+```
+
+Once started, you can start the monitoring dashboard using
+
+```
+./starling start dashboard
+```
+
+To stop the cluster, simply run the following. Note that this will delete all changes within the kind cluster and maybe require re-setup.
+```
+./starling stop kind
+```
+
+#### Running the simulator
 
 
 
