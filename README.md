@@ -226,8 +226,7 @@ starling deploy -k <path to kubeconfig file> restart
 
 Again, use the dashboard to monitor the status of your deployment
 
-
-## Docker-Compose
+## Docker-Compose Examples
 
 The [`docker-compose`](docker-compose) contains a number of preset examples which spin up at minimum a simulator, a software autopilot, mavros and a ros webridge, but also example ui's and basic controllers.
 
@@ -241,31 +240,21 @@ The [docker-compose/px4](docker-compose/px4) folder contains a number of px4 bas
 
 #### Core System
 To start the simulator, a px4 SITL, mavros and the web-bridge, use the following command:
-```
-# First Pull the relevant docker containers
-docker-compose -f docker-compose/px4/docker-compose.core.linux.yml pull
+```bash
+# Pull and Run the docker-containers
+starling deploy -f docker-compose/px4/docker-compose.core.linux.yml --pull
 # or for windows
-# docker-compose -f docker-compose/px4/docker-compose.core.windows.yml pull
-
-# Run the docker-containers
-docker-compose -f docker-compose/px4/docker-compose.core.linux.yml up
-# or for windows
-# docker-compose -f docker-compose/px4/docker-compose.core.windows.yml up
+starling deploy -f docker-compose/px4/docker-compose.core.windows.yml --pull
 ```
 
 #### Simple Offboard with Trajectory Follower UI System
 To start the core with a [simple-offboard controller](https://github.com/StarlingUAS/starling_simple_offboard), [simple-allocator](https://github.com/StarlingUAS/starling_allocator) and [Trajectory follower Web GUI](https://github.com/StarlingUAS/starling_ui_dashly), use the following command:
 
-```
-# First Pull the relevant docker containers
-docker-compose -f docker-compose/px4/docker-compose.simple-offboard.linux.yml pull
-# or for windows
-# docker-compose -f docker-compose/px4/docker-compose.simple-offboard.windows.yml pull
-
+```bash
 # Run the docker-containers
-docker-compose -f docker-compose/px4/docker-compose.simple-offboard.linux.yml up
+starling deploy -f docker-compose/px4/docker-compose.simple-offboard.linux.yml --pull
 # or for windows
-# docker-compose -f docker-compose/px4/docker-compose.simple-offboard.windows.yml up
+starling deploy -fdocker-compose/px4/docker-compose.simple-offboard.windows.yml --pull
 ```
 
 ### Ardupilot Examples
@@ -274,20 +263,15 @@ The [docker-compose/ardupilot](docker-compose/ardupilot) folder contains a numbe
 
 #### Core System
 To start the gazebo simulator, an arducopter SITL, mavros and the web-bridge, use the following command:
-```
-# First Pull the relevant docker containers
-docker-compose -f docker-compose/ardupilot/docker-compose.ap-gazebo.linux.yml pull
-# or for windows
-# docker-compose -f docker-compose/ardupilot/docker-compose.ap-gazebo.windows.yml pull
-
+```bash
 # Run the docker-containers
-docker-compose -f docker-compose/ardupilot/docker-compose.ap-gazebo.linux.yml up
+starling deploy -f docker-compose/ardupilot/docker-compose.ap-gazebo.linux.yml --pull
 # or for windows
-# docker-compose -f docker-compose/ardupilot/docker-compose.ap-gazebo.windows.yml up
+starling deploy -f docker-compose/ardupilot/docker-compose.ap-gazebo.windows.yml --pull
 ```
 
 ### Running External Examples
-An example offboard ROS2 controller can then be conncted to SITL by running the following in a separate terminal:
+An example offboard ROS2 controller can then be conncted to SITL by running the following in a separate terminal. For this we have to use `docker`'s built in command line interface.
 
 ```
 # Download the latest container
@@ -299,6 +283,17 @@ docker run -it --rm --network ardupilot_default uobflightlabstarling/example_con
 ```
 
 See [the docs](https://docs.starlinguas.dev/guide/single-drone-local-machine/#2-running-example-ros2-offboard-controller-node) for further details
-## Kubernetes
 
-TODO
+## Kubernetes Examples
+
+A folder of example deployments is provided in the repository. Currently there is only the one example, but hopefully more will follow! These can all be run using the `deploy` command with the name of the example (corresponds to name of the folder)
+```bash
+starling deploy example <example-name>
+#e.g.
+starling deploy example simple-offboard
+```
+
+1. **simple-offboard** - This example deploys 3 elements which together allow the running of simple waypoint following examples through a graphical user interface on one or more UAVs. Can be run using `starling deploy example simple-offboard` once the simulator has been initialised
+    1. A daemonset is used to deploy the [simple offboard controller](https://github.com/StarlingUAS/starling_simple_offboard) to each vehicle. This provides a high level interface for controlling a vehicle
+    2. An example [Python based UI using the dash library](https://github.com/StarlingUAS/starling_ui_dashly). This provides a graphical user interface to upload and fly trajectories.
+    3. An [allocator module](https://github.com/StarlingUAS/starling_allocator) which takes a trajectory from the UI and distributes it to a particular vehicle to fly.

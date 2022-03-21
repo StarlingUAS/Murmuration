@@ -18,8 +18,11 @@ commands:
     stop\t\tStop given file or container
     restart\t\tRestart given file or container
 
+    example <example folder>\t\tDeploy a given example
+
 options:
     --file/-f\t\tSpecify config file (relative to current location or absolute)
+    --pull\t\tPulls containers before starting deployment (currently only enabled for docker-compose)
 "
 }
 
@@ -54,6 +57,11 @@ do
             STOP=1
             shift
             ;;
+        example)
+            EXAMPLE=$2
+            shift
+            shift
+            ;;
         -f|--file)
             FILE=$2
             shift
@@ -61,6 +69,10 @@ do
             ;;
         --build)
             DC_BUILD=1
+            shift
+            ;;
+        --pull)
+            DC_PULL=1
             shift
             ;;
         *)  # unknown option
@@ -79,15 +91,33 @@ else
     echo "Kubectl not detected, docker-compose to be used"
 fi
 
-if [[ ! $FILE ]]; then
-    echo "Error: Must specify file using -f argument"
-    exit 1
+FILESLIST=()
+if [[ ! $EXAMPLE ]]; then
+
+    if [[ ! $FILE ]]; then
+        echo "Error: Must specify file using -f argument"
+        exit 0
+    fi
+    FILESLIST+=("$FILE")
+else
+    FOLDER="${STARLING_WORKDIR}/kubernetes/examples/${EXAMPLE}"
+    if [[ -d "$FOLDER" ]]; then
+        for file in "$FOLDER"/*; do
+            FILESLIST+=("$file")
+        done
+    else
+        echo "Example $EXAMPLE does not exist at location: $FOLDER"
+        echo "Please specify an example which exists in the examples folder"
+        exit 0
+    fi
 fi
 
 if [[ $STOP ]]; then
     if [[ $KUBECTL_ENABLED ]]; then
-        echo "Stopping configuration given by: $FILE"
-        kubectl delete -f "$FILE"
+        for file in "${FILESLIST[@]}"; do
+            echo "Stopping configuration given by: $file"
+            kubectl delete -f "$file"
+        done
     else
         echo "Stopping docker compose file given by $FILE"
         docker-compose -f "$FILE" down
@@ -96,9 +126,16 @@ fi
 
 if [[ $START ]]; then
     if [[ $KUBECTL_ENABLED ]]; then
-        echo "Staring configuration given by: $FILE"
-        kubectl apply -f "$FILE"
+        for file in "${FILESLIST[@]}"; do
+            echo "Staring configuration given by: $file"
+            kubectl apply -f "$file"
+        done
     else
+        if [[ $DC_PULL ]]; then
+            echo "Pre-pulling containers for $FILE"
+            docker-compose -f "$FILE" pull
+        fi
+
         echo "Starting docker compose file given by $FILE"
         if [[ $DC_BUILD ]]; then
             docker-compose -f "$FILE" up --build
