@@ -67,8 +67,8 @@ do
 done
 
 SIMULATOR_DEPLOYMENT_LIST=(
-    "${STARLING_WORKDIR}/deployment/k8.gazebo-iris.amd64.yaml"
-    "${STARLING_WORKDIR}/deployment/k8.px4_sitl.daemonset.yaml"
+    "${STARLING_WORKDIR}/deployment/simulation/k8.gazebo-iris.amd64.yaml"
+    "${STARLING_WORKDIR}/deployment/simulation/k8.px4-sitl.daemonset.yaml"
     "${STARLING_WORKDIR}/deployment/k8.mavros.daemonset.yaml"
 );
 
