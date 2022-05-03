@@ -13,7 +13,9 @@ Usage:
     dashboard\t\tStarts kubernetes dashboard
 
 Options
-    --num_vehicles -n\t Maximum number of vehicles to start
+    --num_uavs -n\t Maximum number of uavs to start (1 by default)
+    --num_ugvs -n_ugv\t Maximum number of ground vehicles to start (0 by default)
+    --vehicle_config_yaml\t Yaml file dictating the vehicle setup. Accepting a list of 'vehicles', specifying 'type', 'x', 'y' and 'z'
 "
 }
 
@@ -33,8 +35,18 @@ do
             cli_help_install
             exit 1
             ;;
-        -n|--num_vehicles)
+        -n|--num_uavs)
             NUM_VEH=$2
+            shift
+            shift
+            ;;
+        -n_ugv|--num_ugvs)
+            NUM_UGV=$2
+            shift
+            shift
+            ;;
+        --vehicle_config_yaml)
+            VEHICLE_CONFIG_YAML=$2
             shift
             shift
             ;;
@@ -68,35 +80,109 @@ done
 # Both configurations are put in a temporary /tmp folder
 # These files are then mounted into the kind node containers
 if [[ $S_KIND ]]; then
-    ## Determine number of vehicles (default 1)
-    echo "Number of vehicles set to $NUM_VEH"
 
     controlplanenode="starling-cluster-control-plane"
     echo "Control plane node: $controlplanenode"
 
-    ## Write Vehicle Configuration files into tmp folder after creating tmp folder
-    ## These mirror the config files found on real vehicles
-    mkdir -p "${STARLING_TMP_DIR}"
-    for (( idx=0; idx<NUM_VEH; idx++ )); do
-        CONFPATH="${STARLING_TMP_DIR}/vehicle${idx}.config"
-        touch "$CONFPATH"
-        # PX4_INSTANCE is required otherwise vehicles all default to zero
-        # PX4_SIM_HOST is for SITL connecting to gazebo instance on the control plane node
-        # PX4_SIM_INIT_LOC_X is to ensure multiple vehicles do not spawn on top of each other
-        # VEHILCE_FCU_URL is set as mavros only autogenerates if config is not provided. We provide config, so we must recreate the URL
-        { echo "PX4_INSTANCE=${idx}";
-          echo "PX4_SIM_HOST=${controlplanenode}";
-          echo "PX4_SIM_INIT_LOC_X=$((idx))";
-          echo "VEHICLE_FCU_URL=udp://127.0.0.1:$((14830+idx))@/";
-          echo "VEHICLE_FIRMWARE=px4";
-          echo "VEHICLE_MAVLINK_SYSID=$((idx+1))";
-          echo "VEHICLE_NAME=vehicle_${idx}";} > "$CONFPATH"
-        touch "${STARLING_TMP_DIR}/px4fmu_vehicle${idx}"
-    done
+    if [[ ! $VEHICLE_CONFIG_YAML ]]; then
+        ## Write Vehicle Configuration files into tmp folder after creating tmp folder
+        ## These mirror the config files found on real vehicles
+
+        ## Determine number of vehicles (default 1)
+        echo "Number of UAVs set to $NUM_VEH"
+
+        mkdir -p "${STARLING_TMP_DIR}"
+        for (( idx=0; idx<NUM_VEH; idx++ )); do
+            CONFPATH="${STARLING_TMP_DIR}/vehicle${idx}.config"
+            touch "$CONFPATH"
+            # PX4_INSTANCE is required otherwise vehicles all default to zero
+            # PX4_SIM_HOST is for SITL connecting to gazebo instance on the control plane node
+            # PX4_SIM_INIT_LOC_X is to ensure multiple vehicles do not spawn on top of each other
+            # VEHILCE_FCU_URL is set as mavros only autogenerates if config is not provided. We provide config, so we must recreate the URL
+            { echo "PX4_INSTANCE=${idx}";
+            echo "PX4_SIM_HOST=${controlplanenode}";
+            echo "PX4_SIM_INIT_LOC_X=$((idx))";
+            echo "VEHICLE_FCU_URL=udp://127.0.0.1:$((14830+idx))@/";
+            echo "VEHICLE_FIRMWARE=px4";
+            echo "VEHICLE_MAVLINK_SYSID=$((idx+1))";
+            echo "VEHICLE_NAME=vehicle_${idx}";} > "$CONFPATH"
+            touch "${STARLING_TMP_DIR}/px4fmu_vehicle${idx}"
+        done
+
+        if [[ $NUM_UGV ]]; then
+            echo "Number of UGVs set to $NUM_UGV"
+            for (( idx=NUM_VEH; idx<NUM_VEH+NUM_UGV; idx++ )); do
+                CONFPATH="${STARLING_TMP_DIR}/vehicle${idx}.config"
+                touch "$CONFPATH"
+                # PX4_INSTANCE is required otherwise vehicles all default to zero
+                # PX4_SIM_HOST is for SITL connecting to gazebo instance on the control plane node
+                # PX4_SIM_INIT_LOC_X is to ensure multiple vehicles do not spawn on top of each other
+                # VEHILCE_FCU_URL is set as mavros only autogenerates if config is not provided. We provide config, so we must recreate the URL
+                { echo "PX4_INSTANCE=${idx}";
+                echo "PX4_SIM_HOST=${controlplanenode}";
+                echo "PX4_SIM_MODEL=r1-rover" # Add this one for rover
+                echo "PX4_SIM_INIT_LOC_X=$((idx))";
+                echo "VEHICLE_FCU_URL=udp://127.0.0.1:$((14830+idx))@/";
+                echo "VEHICLE_FIRMWARE=px4";
+                echo "VEHICLE_MAVLINK_SYSID=$((idx+1))";
+                echo "VEHICLE_NAME=vehicle_${idx}";} > "$CONFPATH"
+                touch "${STARLING_TMP_DIR}/px4fmu_vehicle${idx}"
+            done
+        fi
+
+        TOTAL_NUM_VEH=$((NUM_VEH+NUM_UGV))
+
+    else
+        echo "Vehicle config yaml specified at $VEHICLE_CONFIG_YAML"
+        TOTAL_NUM_VEH=$(yq ".vehicles | length" "$VEHICLE_CONFIG_YAML")
+        echo "Number of vehicles set to $TOTAL_NUM_VEH"
+
+        mkdir -p "${STARLING_TMP_DIR}"
+        for (( idx=0; idx<TOTAL_NUM_VEH; idx++ )); do
+            CONFPATH="${STARLING_TMP_DIR}/vehicle${idx}.config"
+            touch "$CONFPATH"
+            # PX4_INSTANCE is required otherwise vehicles all default to zero
+            # PX4_SIM_HOST is for SITL connecting to gazebo instance on the control plane node
+            # PX4_SIM_INIT_LOC_X is to ensure multiple vehicles do not spawn on top of each other
+            # VEHILCE_FCU_URL is set as mavros only autogenerates if config is not provided. We provide config, so we must recreate the URL
+            { echo "PX4_INSTANCE=${idx}";
+            echo "PX4_SIM_HOST=${controlplanenode}";
+            echo "VEHICLE_FCU_URL=udp://127.0.0.1:$((14830+idx))@/";
+            echo "VEHICLE_FIRMWARE=px4";
+            echo "VEHICLE_MAVLINK_SYSID=$((idx+1))";
+            echo "VEHICLE_NAME=vehicle_${idx}";} > "$CONFPATH"
+
+            VEHICLE_TYPE=$(yq ".vehicles[${idx}].type" "${VEHICLE_CONFIG_YAML}")
+            if [[ $VEHICLE_TYPE != "uav" ]]; then
+                echo "PX4_SIM_MODEL=${VEHICLE_TYPE}" >> "$CONFPATH"
+            fi
+
+            X_LOC=$(yq ".vehicles[${idx}].x" "${VEHICLE_CONFIG_YAML}")
+            if [[ "${X_LOC}" != "null" ]]; then
+                echo "PX4_SIM_INIT_LOC_X=$X_LOC" >> "$CONFPATH"
+            else
+                echo "PX4_SIM_INIT_LOC_X=$((idx))" >> "$CONFPATH"
+            fi
+
+            Y_LOC=$(yq ".vehicles[${idx}].y" "${VEHICLE_CONFIG_YAML}")
+            if [[ "${Y_LOC}" != "null" ]]; then
+                echo "PX4_SIM_INIT_LOC_Y=$Y_LOC" >> "$CONFPATH"
+            fi
+
+            Z_LOC=$(yq ".vehicles[${idx}].z" "${VEHICLE_CONFIG_YAML}")
+            if [[ "${Z_LOC}" != "null" ]]; then
+                echo "PX4_SIM_INIT_LOC_Z=$Z_LOC" >> "$CONFPATH"
+            fi
+
+            # Ensure this file exists
+            touch "${STARLING_TMP_DIR}/px4fmu_vehicle${idx}"
+        done
+
+    fi
 
     ## Write vehicle configurations and labels into kind config copy into tmp
     cp "${STARLING_CONFIG_DIR}/kind_config.yaml" "${STARLING_TMP_DIR}/kind_config.yaml"
-    for (( idx=0; idx<NUM_VEH; idx++ )); do
+    for (( idx=0; idx<TOTAL_NUM_VEH; idx++ )); do
 echo "
 - role: worker
   labels:

@@ -12,11 +12,12 @@ commands:
     start\t\tStarts gazebo iris with px4 and vehicle with specified number of vehicles
     stop\t\tStops all simulator instances
     restart\t\tRestarts the simulator
-    set\t\tSets the number of vehicles in the simulator
     load\t\tLoads local docker images into kind
 
 Arguments:
     --load\t\tAlso loads local docker images into kind, use with start
+    --simulator_kube_deployment_yaml <file>\tSet the default simulation container deployment file
+
 "
 }
 
@@ -25,6 +26,9 @@ if [ -z ${STARLING_COMMON_SOURCED+'check'} ]; then
     echo "Common not sourced, please run from starling cli"
     exit 1
 fi
+
+SIM_DEPLOYMENT_FILE="${STARLING_WORKDIR}/kubernetes/simulation/k8.gazebo-iris.amd64.yaml"
+SITL_DEPLOYMENT_FILE="${STARLING_WORKDIR}/kubernetes/simulation/k8.px4-sitl.daemonset.yaml"
 
 # Parse arguments
 while [[ $# -gt 0 ]]
@@ -52,8 +56,13 @@ do
             LOAD=1
             shift
             ;;
-        set)
-            NUM_VEHICLES=$2
+        --simulator_kube_deployment_yaml)
+            SIM_DEPLOYMENT_FILE=$2
+            shift
+            shift
+            ;;
+        --sitl_kube_deployment_yaml)
+            SITL_DEPLOYMENT_FILE=$2
             shift
             shift
             ;;
@@ -67,8 +76,8 @@ do
 done
 
 SIMULATOR_DEPLOYMENT_LIST=(
-    "${STARLING_WORKDIR}/kubernetes/simulation/k8.gazebo-iris.amd64.yaml"
-    "${STARLING_WORKDIR}/kubernetes/simulation/k8.px4-sitl.daemonset.yaml"
+    "${SIM_DEPLOYMENT_FILE}"
+    "${SITL_DEPLOYMENT_FILE}"
     "${STARLING_WORKDIR}/kubernetes/k8.mavros.daemonset.yaml"
 );
 
@@ -113,11 +122,4 @@ if [[ $START ]]; then
     for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
         kubectl apply -f "$file"
     done
-fi
-
-
-if [[ $NUM_VEHICLES ]]; then
-    echo "Attempting to scale number of vehicles"
-    echo "(Note scaling down might require a restart)"
-    kubectl scale statefulsets starling-px4-sitl --replicas=$NUM_VEHICLES
 fi
