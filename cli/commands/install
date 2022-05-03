@@ -91,6 +91,11 @@ sudo apt-get update
 sudo apt-get install -y python3 python3-pip curl uidmap
 pip3 install click
 
+# Install YQ
+echo "Installing YQ (https://github.com/mikefarah/yq/#install) for yaml parsing"
+wget https://github.com/mikefarah/yq/releases/download/v4.24.5/yq_linux_arm64 -O /usr/bin/yq &&\
+    chmod +x /usr/bin/yq
+
 # Adding starling to bashrc
 for rcfile in "${RC_FILES[@]}"; do
     if [[ -f $rcfile ]]; then
