@@ -110,16 +110,17 @@ fi
 # Stop simlator
 if [[ $STOP ]]; then
     echo "Stopping simulator"
-    for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
-        kubectl delete -f "$file"
-    done
+    kubectl delete --all daemonsets,replicasets,services,deployments,pods,rc,ingress
 fi
 
 
 # Start simlator
 if [[ $START ]]; then
     echo "Starting simulator"
+    local_registry="localhost:${STARLING_REGISTRY_DEFAULT_PORT}"
     for file in "${SIMULATOR_DEPLOYMENT_LIST[@]}"; do
-        kubectl apply -f "$file"
+        echo "Converting to use local registry at ${local_registry}"
+        file_contents=$(sed -E "s;(.+)image: (.+);\1image: ${local_registry}/\2;g" "$file")
+        echo "${file_contents}" | kubectl apply -f -
     done
 fi

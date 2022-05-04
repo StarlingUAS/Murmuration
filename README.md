@@ -83,6 +83,10 @@ If you want to run a container standalone, please refer to normal usage of `dock
 
 The `starling` utility is made up of a number of useful scripts which can be used together to run the simulation and your own controllers
 
+> Note: The starling utility can be configured by adjust variables inside `cli/common`.
+
+> Note: Most commands will have options and help which can be viewed by passing in the `-h` or `--help` options. Otherwise feel free to directly view the command bash files for more details.
+
 #### Starting or stopping the kind cluster
 
 Running the following will give you a single drone cluster
@@ -90,12 +94,38 @@ Running the following will give you a single drone cluster
 starling start kind
 ```
 
+There are also a number of other options for starting kind.
+
 If you are looking to experiment with a multi-drone system, you can specify the number using the `-n` option. For example for a 3 node (drone) cluster
 ```
 starling start kind -n 3
 ```
 
-To stop the cluster, simply run the following. Note that this will delete all changes within the kind cluster and maybe require re-setup.
+If you wish to use unmanned ground vehicles, you can specify using the `-n_ugv` option
+```
+starling start kind -n 2 -n_ugv 2
+```
+
+You can also specify a start location using a simple yaml configuration file. For example the following file saved as `vehicle_config.yaml` specifies the spawning of a UAV and a UGV (r1_rover) at two specified locations in space:
+```yaml
+vehicles:
+  - type: uav
+    x: 0
+    y: 0
+    z: 2
+  - type: r1_rover
+    x: 0
+    y: 0
+    z: 0
+```
+The configuration must have a root key of `vehicles` followed by a list of vehicles. Each vehicle must specify a type - either `uav` (alias for `iris`) or the exact name of the vehicle within the simulation container model database, as well as its opitonal `x`, `y` and `z` location. This configuration can be applied with:
+```console
+starling start kind --vehicle_config_yaml vehicle_config.yaml
+```
+
+> Note: Starting kind will also start a local registry to store local containers. [See here for details](https://kind.sigs.k8s.io/docs/user/local-registry/). The system is configured to make use of this. The default registry is exposed on `localhost:5001` according to the environment varibles in `cli/common`
+
+To stop the cluster, simply run the following. Note that this will delete all changes within the kind cluster and maybe require re-setup. This also stops the local registry unless specified.
 ```
 starling stop kind
 ```
@@ -164,7 +194,7 @@ starling simulator start
 starling simulator start --load
 ```
 
-Once run, you can monitor the deployments on the kubernetes dashboard. In particular you can inspect the **worloads** -> **pods**. If they show green the systems should hopefully have started correctly.
+Once run, you can monitor the deployments on the kubernetes dashboard. In particular you can inspect the **workloads** -> **pods**. If they show green the systems should hopefully have started correctly.
 
 > Again, see [this illustrated guide](https://docs.starlinguas.dev/details/kubernetes-dashboard/) to the dashboard
 
@@ -182,6 +212,13 @@ starling simulator restart
 If you want to stop the simulation, simply run
 ```bash
 starling simulator stop
+```
+
+#### Custom Simulator
+
+Custom simulators can be run by specifying the `--simulator_kube_deployment_yaml` and `--sitl_kube_deployment_yaml` options for `starling simulator start/stop/load`. e.g.
+```
+starling simulator start --simulator_kube_deployment_yaml simulator_config/k8.gazebo-marsupial.yaml --sitl_kube_deployment_yaml simulator_config/k8.px4-sitl.daemonset.yaml
 ```
 
 #### Deploying containers
