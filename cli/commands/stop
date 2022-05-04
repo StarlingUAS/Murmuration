@@ -37,6 +37,10 @@ do
             shift
             shift
             ;;
+        -kr|--keep_registry)
+            KEEP_REGISTRY=1
+            shift
+            ;;
         kind)
             S_KIND=1
             shift
@@ -63,6 +67,14 @@ done
 # STOP kind
 if [[ $S_KIND ]]; then
     kind delete cluster --name="${CLUSTER_NAME:-starling-cluster}"
+
+    # remove registry
+    if [[ ! $KEEP_REGISTRY ]]; then
+        echo "Removing Registry"
+        docker stop "${STARLING_REGISTRY_NAME}"
+    else
+        echo "Registry being left, please remember to remove yourself"
+    fi
 
     # remove temp folder
     rm -r "${STARLING_TMP_DIR}"
