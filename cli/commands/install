@@ -83,44 +83,70 @@ do
             ;;
     esac
 done
+echo "############ Welcome to the Starling Installer ############"
 
 # Update system
-sudo apt-get update
+echo "System Update"
+sudo apt-get update &> /dev/null
 
 # Install Python and Pip
-sudo apt-get install -y python3 python3-pip curl uidmap
+echo "Installing Python Pip and Click"
+sudo apt-get install -y wget python3 python3-pip curl uidmap   &> /dev/null
 pip3 install click
 
 # Install YQ
-echo "Installing YQ (https://github.com/mikefarah/yq/#install) for yaml parsing"
-wget https://github.com/mikefarah/yq/releases/download/v4.24.5/yq_linux_arm64 -O /usr/bin/yq &&\
-    chmod +x /usr/bin/yq
+if [[ ! "$(command -v docker &> /dev/null)" ]]; then
+    echo "Installing YQ (https://github.com/mikefarah/yq/#install) for yaml parsing"
+    wget https://github.com/mikefarah/yq/releases/download/v4.24.5/yq_linux_arm64 -O /usr/bin/yq &&\
+        chmod +x /usr/bin/yq
+else
+    echo "YQ already installed"
+fi
 
-# Adding starling to bashrc
+# Adding starling cli exe to bashrc
 for rcfile in "${RC_FILES[@]}"; do
     if [[ -f $rcfile ]]; then
         echo "Adding Starling to $rcfile"
-        echo "export PATH=$(pwd):$PATH" >> "$rcfile"
+        echo "export PATH=$STARLING_WORKDIR/bin:$PATH" >> "$rcfile"
     fi
 done
 
 # Install docker
 if  [[ ! $SKIP_DOCKER && ! "$(command -v docker &> /dev/null)" ]]; then
     echo "Installing docker"
-    curl -fsSL https://get.docker.com | sudo bash -s
-    dockerd-rootless-setuptool.sh install
-    for rcfile in "${RC_FILES[@]}"; do
-        if [[ -f $rcfile ]]; then
-            {
-                export XDG_RUNTIME_DIR=/home/docker/.docker/run;
-                export PATH=/usr/bin:$PATH;
-                export DOCKER_HOST=unix:///home/docker/.docker/run/docker.sock;
-            } >> "$rcfile"
-        fi
-    done
+    sudo apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+    echo "Adding user to docker group"
+    if [ ! "$(getent group docker)" ]; then
+        sudo groupadd docker
+    fi
+    sudo usermod -aG docker "$USER"
+
+    echo "You will need to log out and back again for docker to properly install"
 
 else
     echo "Docker already exists, skipping install"
+fi
+
+# Install Kubectl
+if [[ $INSTALL_KUBE ]]; then
+    echo "Installing kubectl utility"
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+    echo "kubectl install complete"
+else
+    echo "Use the starling install kubectl to install kubectl standalone (bundled with the others)"
 fi
 
 # Install Kind
@@ -130,10 +156,13 @@ if [[ $INSTALL_KIND ]]; then
     curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.12.0/kind-linux-amd64
     chmod +x ./kind
     sudo mv ./kind "${install_location}"
+    echo "Kind Install Complete"
+else
+    echo "Use starling install kind for local starling test harness"
 fi
 
 # Install k3s
-if [[ $INSTALL_KUBE || $INSTALL_K3S ]]; then
+if [[ $INSTALL_K3S ]]; then
     echo "Created directory $(dirname "${STARLING_KUBE_CONFIG_FILE_PATH}") for storing config file"
     mkdir -p "$(dirname "${STARLING_KUBE_CONFIG_FILE_PATH}")"
 
@@ -180,4 +209,8 @@ if [[ $INSTALL_KUBE || $INSTALL_K3S ]]; then
         fi
     done
     echo "K3s or kubectl install complete"
+else
+    echo "Use starling install k3s for full system install (not recommended for most users)"
 fi
+
+echo "############ Starling Installer Complete ############"

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-STARLING_WORKDIR=$(cd "$(dirname "$0")" && pwd)
-export STARLING_WORKDIR
+STARLING_WORKDIR="$(cd "$(dirname "$0")" && pwd)/.."
 CLIDIR="$STARLING_WORKDIR/cli"
 
 # shellcheck source=./cli/common
@@ -23,7 +22,7 @@ Commands:
 for file in "$STARLING_COMMANDS_DIR"/*; do
     if [[ -f "$file" && -x "$file" ]]; then
         instruction="$(sed -n '2p' "$file")"
-        echo -e "  $(basename "$file")\t${instruction:2}" 
+        echo -e "  $(basename "$file")\t${instruction:2}"
     fi
 done
 
