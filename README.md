@@ -126,8 +126,10 @@ starling start kind --vehicle_config_yaml vehicle_config.yaml
 > Note: Starting kind will also start a local registry to store local containers. [See here for details](https://kind.sigs.k8s.io/docs/user/local-registry/). The system is configured to make use of this. The default registry is exposed on `localhost:5001` according to the environment varibles in `cli/common`
 
 To stop the cluster, simply run the following. Note that this will delete all changes within the kind cluster and maybe require re-setup. This also stops the local registry unless specified.
-```
+```bash
 starling stop kind
+# or to keep the local registry around for use later, e.g. starling restart
+starling stop kind --keep_registry
 ```
 
 #### Monitoring:
@@ -235,10 +237,13 @@ starling utils kind-load <container name>
 starling utils kind-load uobflightlabstarling/starling-mavros:latest
 ```
 
+or when using the `simulator` or `deploy` commands, you can simply specify the `--load` option and it will automatically extract the images from your deployment file and load these images locally for you.
+
 Secondly, you will need to write a kubernetes deployment file known as a kubeconfig. A kubeconfig is a yaml file which specifies what sort of deployment you want, along with many options (where to run your controller etc.). For now, see the *deployment* folder and the repositories in StarlingUAS for examples. In particular we mention the existence of two types of deployment:
 
 1. **Deployment**: This specfies the self-healing deployment of one *pod* (a.k.a a collection of containers) to a node.
 2. **DaemonSet**: This specifies the self-healing automatic deployment of a pod to all nodes which match a given specification. Use this for a deployment to all vehicles.
+
 
 Once a kubernetes configuration has been written, it can be deployed to kind.
 ```bash
@@ -259,9 +264,18 @@ To restart a deployment with an update to the container, you just need to ensure
 ```bash
 starling utils kind-load <container name>
 starling deploy -k <path to kubeconfig file> restart
+# or using the --load option to do both
+starling deploy -k <path to kubeconfig file> restart --load
 ```
 
 Again, use the dashboard to monitor the status of your deployment
+
+In summary, if actively developing a new application, the steps to redeployment are therefore:
+
+1. Rebuild your container (recommendation is to use a makefile)
+2. `starling deploy -k kubernetes.yaml restart --load`
+
+> Note: If you see that your deployed container is not updating, you will need to change the `imagePullPolicy: Always` to ensure the kubernetes updates itself from the local registry.
 
 ## Docker-Compose Examples
 
@@ -330,7 +344,11 @@ starling deploy example <example-name>
 starling deploy example simple-offboard
 ```
 
+> **Note** - If running locally, you may also want to give the `--load` option e.g. `starling deploy example position-trajectory --load` to reduce the loading time on restarts.
+
 1. **simple-offboard** - This example deploys 3 elements which together allow the running of simple waypoint following examples through a graphical user interface on one or more UAVs. Can be run using `starling deploy example simple-offboard` once the simulator has been initialised
     1. A daemonset is used to deploy the [simple offboard controller](https://github.com/StarlingUAS/starling_simple_offboard) to each vehicle. This provides a high level interface for controlling a vehicle
     2. An example [Python based UI using the dash library](https://github.com/StarlingUAS/starling_ui_dashly). This provides a graphical user interface to upload and fly trajectories.
     3. An [allocator module](https://github.com/StarlingUAS/starling_allocator) which takes a trajectory from the UI and distributes it to a particular vehicle to fly.
+
+2. **position-trajectory** This example deploys a single deployment file with multiple elements. It contains a onboard position trajectory controller, and a centralised control pod which contains the allocator and dash library from before. Run `starling deploy example position-trajectory` to run this example.

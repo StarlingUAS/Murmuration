@@ -11,7 +11,7 @@ nodes:
     hostPort: 8080
   # UI
   - containerPort: 3000
-    hostPort: 3000
+    hostPort: 3001
   # Rosbridge Suite
   - containerPort: 9090
     hostPort: 9090

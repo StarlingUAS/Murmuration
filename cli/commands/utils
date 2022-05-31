@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#Starts Starling Server
+# \tUtility functions
 
 set -e
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#Starts Starling Server
+# \tStops Starling Server
 
 set -e
 
@@ -14,6 +14,7 @@ Usage:
 
 Optional Arguments
     --name\t\tName of cluster to delete (kind)
+    --keep_registry -kr \tKeep the registry running on delete
 "
 }
 
@@ -71,7 +72,7 @@ if [[ $S_KIND ]]; then
     # remove registry
     if [[ ! $KEEP_REGISTRY ]]; then
         echo "Removing Registry"
-        docker stop "${STARLING_REGISTRY_NAME}"
+        docker rm "${STARLING_REGISTRY_NAME}"
     else
         echo "Registry being left, please remember to remove yourself"
     fi

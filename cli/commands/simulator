@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#Starts Starling Server
+# Starts Starling Server
 
 set -e
 
@@ -17,6 +17,7 @@ commands:
 Arguments:
     --load\t\tAlso loads local docker images into kind, use with start
     --simulator_kube_deployment_yaml <file>\tSet the default simulation container deployment file
+    --sitl_kube_deployment_yaml <file>\tSet the defualt SILT container deployment file
 
 "
 }

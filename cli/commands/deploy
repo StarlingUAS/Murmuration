@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#Starts Starling Server
+# Starts Starling Server
 
 set -e
 
@@ -23,6 +23,7 @@ commands:
 options:
     --file/-f\t\tSpecify config file (relative to current location or absolute)
     --pull\t\tPulls containers before starting deployment (currently only enabled for docker-compose)
+    --load\t\tFor kind deployment, will inspect the deployment file and load the relevant images into the local regsitry before deployment.
 "
 }
 
@@ -73,6 +74,10 @@ do
             ;;
         --pull)
             DC_PULL=1
+            shift
+            ;;
+        --load)
+            LOAD=1
             shift
             ;;
         *)  # unknown option
@@ -126,9 +131,37 @@ fi
 
 if [[ $START ]]; then
     if [[ $KUBECTL_ENABLED ]]; then
+        if [[ $LOAD ]]; then
+            images=()
+            echo "Finding images in deployment files"
+            for file in "${FILESLIST[@]}"; do
+                readarray image_lines < <(grep "image:" "$file")
+                # image_lines=("$(grep "image:" $file)")
+                for i in "${image_lines[@]}"; do
+                    a1="$( echo "$i" | xargs | cut -c8- )"
+                    if [[ ! "${images[*]}" =~ "${a1}" ]]; then
+                        # whatever you want to do when array doesn't contain value
+                        echo "Found Image Reference: '$a1'"
+                        images+=( "$a1" )
+                    else
+                        echo "Not Adding Image Already Found $a1"
+                    fi
+                done
+            done
+            echo
+            echo "Copying local containers across"
+            for i in "${images[@]}"; do
+                bash "${STARLING_WORKDIR}/starling" utils kind-load "$i"
+            done
+            echo "All containers loaded"
+        fi
+
         for file in "${FILESLIST[@]}"; do
-            echo "Staring configuration given by: $file"
-            kubectl apply -f "$file"
+            echo "Starting configuration given by: $file"
+            local_registry="localhost:${STARLING_REGISTRY_DEFAULT_PORT}"
+            echo "Converting to use local registry at ${local_registry}"
+            file_contents=$(sed -E "s;(.+)image: (.+);\1image: ${local_registry}/\2;g" "$file")
+            echo "${file_contents}" | kubectl apply -f -
         done
     else
         if [[ $DC_PULL ]]; then
