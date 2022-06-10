@@ -95,10 +95,10 @@ sudo apt-get install -y wget python3 python3-pip curl uidmap   &> /dev/null
 pip3 install click
 
 # Install YQ
-if [[ ! "$(command -v docker &> /dev/null)" ]]; then
+if [[ ! "$(command -v yq)" ]]; then
     echo "Installing YQ (https://github.com/mikefarah/yq/#install) for yaml parsing"
-    wget https://github.com/mikefarah/yq/releases/download/v4.24.5/yq_linux_arm64 -O /usr/bin/yq &&\
-        chmod +x /usr/bin/yq
+    sudo wget https://github.com/mikefarah/yq/releases/download/v4.24.5/yq_linux_arm64 -O /usr/bin/yq &&\
+        sudo chmod +x /usr/bin/yq
 else
     echo "YQ already installed"
 fi
@@ -112,7 +112,7 @@ for rcfile in "${RC_FILES[@]}"; do
 done
 
 # Install docker
-if  [[ ! $SKIP_DOCKER && ! "$(command -v docker &> /dev/null)" ]]; then
+if  [[ ! $SKIP_DOCKER && ! "$(command -v docker)" ]]; then
     echo "Installing docker"
     sudo apt-get install -y \
         ca-certificates \
