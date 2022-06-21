@@ -4,6 +4,7 @@ export STARLING_COMMON_SOURCED=true
 
 # Useful Environment Variables
 
+export STARLING_BINDIR=${STARLING_BINDIR:-}
 export STARLING_WORKDIR=${STARLING_WORKDIR:-}
 export STARLING_CLI_DIR="$STARLING_WORKDIR/cli"
 export STARLING_COMMANDS_DIR="$STARLING_CLI_DIR/commands"
@@ -17,9 +18,3 @@ export STARLING_KUBE_CONFIG_FILE_PATH=$STARLING_KUBE_CONFIG_DIR/config/k3s.yaml
 # LOCAL REGISTRY DEFAULTS
 export STARLING_REGISTRY_NAME='kind-registry'
 export STARLING_REGISTRY_DEFAULT_PORT='5001'
-
-declare -a RC_FILES=(
-    ~/.zshrc
-    ~/.bashrc
-)
-export RC_FILES

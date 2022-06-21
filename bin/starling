@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-STARLING_WORKDIR="$(cd "$(dirname "$0")" && pwd)/.."
+STARLING_BINDIR="$(cd "$(dirname "$0")" && pwd)"
+export STARLING_BINDIR
+
+STARLING_WORKDIR="$(cd "$(dirname "$0")/.." && pwd)"
 CLIDIR="$STARLING_WORKDIR/cli"
 
 # shellcheck source=./cli/common
