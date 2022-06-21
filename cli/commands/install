@@ -105,9 +105,10 @@ fi
 
 # Adding starling cli exe to bashrc
 for rcfile in "${RC_FILES[@]}"; do
+    echo "Checking if ${rcfile} exists"
     if [[ -f $rcfile ]]; then
         echo "Adding Starling to $rcfile"
-        echo "export PATH=$STARLING_WORKDIR/bin:$PATH" >> "$rcfile"
+        echo "export PATH=\"$STARLING_WORKDIR/bin:\$PATH\"" >> "$rcfile"
     fi
 done
 

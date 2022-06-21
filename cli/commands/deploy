@@ -22,6 +22,7 @@ commands:
 
 options:
     --file/-f\t\tSpecify config file (relative to current location or absolute)
+    --build\t\tFor docker files, which locally build containers, it will force the build.
     --pull\t\tPulls containers before starting deployment (currently only enabled for docker-compose)
     --load\t\tFor kind deployment, will inspect the deployment file and load the relevant images into the local regsitry before deployment.
 "
@@ -118,6 +119,7 @@ else
 fi
 
 if [[ $STOP ]]; then
+    set +e
     if [[ $KUBECTL_ENABLED ]]; then
         for file in "${FILESLIST[@]}"; do
             echo "Stopping configuration given by: $file"
@@ -127,6 +129,7 @@ if [[ $STOP ]]; then
         echo "Stopping docker compose file given by $FILE"
         docker-compose -f "$FILE" down
     fi
+    set -e
 fi
 
 if [[ $START ]]; then
