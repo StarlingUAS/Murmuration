@@ -113,6 +113,8 @@ for rcfile in "${RC_FILES[@]}"; do
     if [[ -f $rcfile ]]; then
         echo "Adding Starling to $rcfile"
         echo "export PATH=\"$STARLING_BINDIR:\$PATH\"" >> "$rcfile"
+        # Set KUBECONFIG environment variable otherwise it will complain that it cannot find configuration file.         
+        echo "export KUBECONFIG=~/.kube/config/k3s.yaml" >> "$rcfile"
     fi
 done
 
