@@ -154,7 +154,7 @@ if [[ $START ]]; then
             echo
             echo "Copying local containers across"
             for i in "${images[@]}"; do
-                bash "${STARLING_WORKDIR}/starling" utils kind-load "$i"
+                bash "${STARLING_BINDIR}/starling" utils kind-load "$i"
             done
             echo "All containers loaded"
         fi

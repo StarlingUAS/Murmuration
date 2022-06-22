@@ -72,6 +72,7 @@ if [[ $S_KIND ]]; then
     # remove registry
     if [[ ! $KEEP_REGISTRY ]]; then
         echo "Removing Registry"
+        docker stop "${STARLING_REGISTRY_NAME}"
         docker rm "${STARLING_REGISTRY_NAME}"
     else
         echo "Registry being left, please remember to remove yourself"

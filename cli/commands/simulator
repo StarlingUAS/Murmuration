@@ -62,8 +62,8 @@ do
             shift
             ;;
         --brl)
-            SIM_DEPLOYMENT_FILE=BRL_SIM_DEPLOYMENT_FILE
-            SITL_DEPLOYMENT_FILE=BRL_SITL_DEPLOYMENT_FILE
+            SIM_DEPLOYMENT_FILE="$BRL_SIM_DEPLOYMENT_FILE"
+            SITL_DEPLOYMENT_FILE="$BRL_SITL_DEPLOYMENT_FILE"
             shift
             ;;
         --simulator_kube_deployment_yaml)
@@ -112,7 +112,7 @@ if [[ $LOAD ]]; then
     echo
     echo "Copying local containers across"
     for i in "${images[@]}"; do
-        bash "${STARLING_WORKDIR}/starling" utils kind-load "$i"
+        bash "${STARLING_BINDIR}/starling" utils kind-load "$i"
     done
     echo "All containers loaded"
 fi
