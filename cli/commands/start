@@ -251,7 +251,10 @@ if [[ $S_DASH ]]; then
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/${VERSION_KUBE_DASHBOARD}/aio/deploy/recommended.yaml
     kubectl apply -f ${STARLING_WORKDIR}/kubernetes/resources/dashboard.admin.yaml #dashboard.admin-user.yml -f deployment/resources/dashboard.admin-user-role.yml
     echo "==================="
-
+       
+    echo "Creating Dashboard Token:"
+    kubectl -n kubernetes-dashboard create token admin-user
+    
     DASHBOARD_TOKEN="$(kubectl -n kubernetes-dashboard describe secret admin-user-token | grep ^token | cut -c 13-)"
 
     echo "The Dashboard is available at https://localhost:31771"
