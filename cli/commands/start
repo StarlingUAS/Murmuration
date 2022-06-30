@@ -253,7 +253,7 @@ if [[ $S_DASH ]]; then
     echo "==================="
        
     echo "Creating Dashboard Token:"
-    kubectl -n kubernetes-dashboard create token admin-user
+    kubectl -n kubernetes-dashboard create token admin-user-token
     
     DASHBOARD_TOKEN="$(kubectl -n kubernetes-dashboard describe secret admin-user-token | grep ^token | cut -c 13-)"
 
