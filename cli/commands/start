@@ -253,9 +253,7 @@ if [[ $S_DASH ]]; then
     echo "==================="
        
     echo "Creating Dashboard Token:"
-    kubectl -n kubernetes-dashboard create token admin-user-token
-    
-    DASHBOARD_TOKEN="$(kubectl -n kubernetes-dashboard describe secret admin-user-token | grep ^token | cut -c 13-)"
+    DASHBOARD_TOKEN="$(kubectl -n kubernetes-dashboard create token admin-user)"
 
     echo "The Dashboard is available at https://localhost:31771"
     echo "You will need the dashboard token, to access it."
@@ -271,6 +269,6 @@ if [[ $S_DASH ]]; then
     echo $DASHBOARD_TOKEN
     echo "-----END DASHBOARD TOKEN-----"
     echo "Note: your browser may not like the self signed ssl certificate, ignore and continue for now"
-    echo "To get the token yourself run: kubectl -n kubernetes-dashboard describe secret admin-user-token"
+    echo "To get the token yourself run: kubectl -n kubernetes-dashboard create token admin-user"
     echo "==================="
 fi
