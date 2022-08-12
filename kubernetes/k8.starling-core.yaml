@@ -1,3 +1,4 @@
+# Default Starling Vehicle Deployments
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -30,7 +31,7 @@ spec:
 
       containers:
         - name: starling-mavros
-          image: uobflightlabstarling/starling-mavros:latest
+          image: uobflightlabstarling/starling-mavros:nightly
           imagePullPolicy: Always
           securityContext:
             privileged: true
@@ -43,6 +44,10 @@ spec:
             value: "localhost" # ROS1 will ping HOSTNAME, defaults to system hostname
           - name: ROS_MASTER_URI
             value: "http://localhost:11311"
+          - name: ROS_DISCOVERY_SERVER
+            value: ""
+          - name: BRIDGE_LAUNCH_DELAY
+            value: "9"
           volumeMounts:
           - mountPath: /dev/px4fmu
             name: ttypx4
@@ -58,3 +63,53 @@ spec:
           hostPath:
             path: /etc/starling/vehicle.config
             type: File
+
+---
+
+# Default Server Deployments
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starling-core
+  labels:
+    app: starling-core
+spec:
+  selector:
+    matchLabels:
+      app:  starling-core
+  template:
+    metadata:
+      labels:
+        app: starling-core
+    spec:
+
+      hostNetwork: true
+      shareProcessNamespace: true
+
+      hostname: starling-core
+      subdomain: ros2-discovery-service
+
+      nodeSelector:
+        name: master
+
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+
+      containers:
+      - name: ros2-discovery-server
+        image: ros:foxy-ros-core
+        imagePullPolicy: Always
+        args: ["fastdds", "discovery", "-i", "0"]
+        ports:
+        - containerPort: 11811
+      - name: ping-monitor
+        image: uobflightlabstarling/ping-monitor:latest
+        imagePullPolicy: Always
+        env:
+        - name: ROS_DISCOVERY_SERVER
+          value: "127.0.0.1:11811"
+        command: ["/bin/bash"]
+        args: ["-c", "sleep 30 ; echo sleep ended ; exec /ros_ws/run.sh"]
+

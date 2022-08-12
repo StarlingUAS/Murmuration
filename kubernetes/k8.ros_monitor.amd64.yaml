@@ -13,7 +13,7 @@ spec:
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 300; done;" ]
   - name: network-toolbox
-    image: praqma/network-multitool
+    image: wbitt/network-multitool
   nodeSelector:
     kubernetes.io/arch: amd64
     # k3s.io/hostname: clover1

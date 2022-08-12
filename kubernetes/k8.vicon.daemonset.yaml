@@ -32,6 +32,9 @@ spec:
         - name: starling-vicon
           image: uobflightlabstarling/starling-vicon:latest
           imagePullPolicy: Always
+          env:
+          - name: ROS_DISCOVERY_SERVER
+            value: ""
           ports:
           - containerPort: 51001
             protocol: UDP
