@@ -44,17 +44,20 @@ spec:
             value: "localhost" # ROS1 will ping HOSTNAME, defaults to system hostname
           - name: ROS_MASTER_URI
             value: "http://localhost:11311"
-          - name: ROS_DISCOVERY_SERVER
-            value: ""
+          # - name: ROS_DISCOVERY_SERVER
+          #   value: "192.168.10.80:11811;127.0.0.1:11811"
+          - name: MAVROS_GCS_URL
+            value: "udp://@:14550"
           - name: BRIDGE_LAUNCH_DELAY
-            value: "9"
+            value: "10"
+          - name: ROS_DOMAIN_ID
+            value: "2"
           volumeMounts:
           - mountPath: /dev/px4fmu
             name: ttypx4
           - mountPath: /etc/starling/vehicle.config
             name: vehicleconfig
             readOnly: true
-
       volumes:
         - name: ttypx4
           hostPath:
@@ -63,6 +66,10 @@ spec:
           hostPath:
             path: /etc/starling/vehicle.config
             type: File
+
+# docker run -it --rm --net=host -e MAVROS_TGT_FIRMWARE=px4 -e MAVROS_TGT_SYSTEM=auto -e ROS_HOSTNAME=localhost -e ROS_MASTER_URI="http://localhost:11311" \
+#   -e MAVROS_GCS_URL="udp://@:14550" -e BRIDGE_LAUNCH_DELAY=10 -e ROS_DOMAIN_ID=2 -v /dev/px4fmu:/dev/px4fmu -v /etc/starling/vehicle.config:/etc/starling/vehicle.config \
+#   --privileged uobflightlabstarling/starling-mavros:nightly bash
 
 ---
 
@@ -86,9 +93,6 @@ spec:
       hostNetwork: true
       shareProcessNamespace: true
 
-      hostname: starling-core
-      subdomain: ros2-discovery-service
-
       nodeSelector:
         name: master
 
@@ -98,18 +102,11 @@ spec:
         effect: NoSchedule
 
       containers:
-      - name: ros2-discovery-server
-        image: ros:foxy-ros-core
-        imagePullPolicy: Always
-        args: ["fastdds", "discovery", "-i", "0"]
-        ports:
-        - containerPort: 11811
       - name: ping-monitor
-        image: uobflightlabstarling/ping-monitor:latest
+        image: uobflightlabstarling/ping-monitor:nightly
         imagePullPolicy: Always
         env:
-        - name: ROS_DISCOVERY_SERVER
-          value: "127.0.0.1:11811"
-        command: ["/bin/bash"]
-        args: ["-c", "sleep 30 ; echo sleep ended ; exec /ros_ws/run.sh"]
+        - name: ROS_DOMAIN_ID # Set Domain ID for flight arena to avoid conflicts with localnetwork traffic
+          value: "2"
+
 

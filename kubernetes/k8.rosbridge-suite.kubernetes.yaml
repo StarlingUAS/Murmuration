@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rosbridge-suite
+spec:
+  selector:
+    matchLabels:
+      app: rosbridge-suite
+  template:
+    metadata:
+      labels:
+        app: rosbridge-suite
+    spec:
+      hostNetwork: true
+      shareProcessNamespace: true
+
+      nodeSelector:
+        name: master
+
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+
+      containers:
+      - name: rosbridge-suite
+        image: uobflightlabstarling/rosbridge-suite:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9090
+        env:
+        - name: ROS_DOMAIN_ID # Set Domain ID for flight arena to avoid conflicts with localnetwork traffic
+          value: "2"
