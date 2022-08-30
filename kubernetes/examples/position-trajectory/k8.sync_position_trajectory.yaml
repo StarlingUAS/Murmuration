@@ -37,6 +37,9 @@ spec:
         - mountPath: /etc/starling/vehicle.config
           name: vehicleconfig
           readOnly: true
+        env:
+        - name: ROS_DOMAIN_ID
+          value: "2"
 
       volumes:
       - name: vehicleconfig
@@ -51,6 +54,7 @@ kind: Deployment
 metadata:
   name: sync-monitor
 spec:
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app:  sync-monitor
@@ -74,16 +78,24 @@ spec:
         env:
           - name: RUN_MONITOR
             value: "true"
+          - name: ROS_DOMAIN_ID
+            value: "2"
       - name: starling-allocator
         image: uobflightlabstarling/starling-allocator:latest
         imagePullPolicy: Always
+        env:
+          - name: ROS_DOMAIN_ID
+            value: "2"
       - name: starling-ui
         image: mickeyli789/starling-ui-dashly:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
-      - name: rosbridge-suite
-        image: uobflightlabstarling/rosbridge-suite:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 9090
+        env:
+          - name: ROS_DOMAIN_ID
+            value: "2"
+      # - name: rosbridge-suite
+      #   image: uobflightlabstarling/rosbridge-suite:latest
+      #   imagePullPolicy: Always
+      #   ports:
+      #   - containerPort: 9090

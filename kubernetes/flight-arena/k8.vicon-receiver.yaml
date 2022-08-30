@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vicon-receiver
+spec:
+  selector:
+    matchLabels:
+      app: vicon-receiver
+  template:
+    metadata:
+      labels:
+        app: vicon-receiver
+    spec:
+      hostNetwork: true
+      shareProcessNamespace: true
+      containers:
+      - name: vicon-receiver
+        image: uobflightlabstarling/vicon-receiver:latest
+        imagePullPolicy: Always
+        env:
+          - name: ROS_DOMAIN_ID
+            value: "2"
+          - name: VICON_HOST_IP
+            value: "192.168.10.1" # VICON PC IP ADDRESS
+
+      nodeSelector:
+        name: master
+
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
