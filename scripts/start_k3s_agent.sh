@@ -31,4 +31,7 @@ ssh $1@$2 " \
  INSTALL_K3S_SKIP_DOWNLOAD=true K3S_NODE_NAME=$3 K3S_URL=${K3S_SERVER} K3S_TOKEN=${K3S_TOKEN} INSTALL_K3S_EXEC=${INSTALL_K3S_EXEC} ./k3s_install.sh;";
 
 
+echo "Attempting to Apply Labels to Node"
+kubectl label node $3 starling.dev/type=vehicle starling.dev/vehicle-class=rotary starling.dev/vehicle-type=clover
+
 exit -1

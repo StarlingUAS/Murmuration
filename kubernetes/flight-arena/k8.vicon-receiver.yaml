@@ -21,7 +21,7 @@ spec:
           - name: ROS_DOMAIN_ID
             value: "2"
           - name: VICON_HOST_IP
-            value: "192.168.10.1" # VICON PC IP ADDRESS
+            value: "192.168.0.50" # VICON PC IP ADDRESS
 
       nodeSelector:
         name: master

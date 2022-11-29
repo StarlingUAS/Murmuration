@@ -185,9 +185,9 @@ if [[ $INSTALL_K3S ]]; then
     # Only needs to be run once per system
     # Download and start kubernetes master node
     echo "Downloading and Installing K3s in systemd"
-    echo "The configuration file will be placed in $CONFIGFILE"
+    echo "The configuration file will be placed in $STARLING_KUBE_CONFIG_FILE_PATH"
     echo "root is required for initial installation (running of the kubernetes systemd)"
-    curl -sfL https://get.k3s.io | sudo bash -s -- "${K3S_ADDITIONAL_ARGS}"
+    curl -sfL https://get.k3s.io | sudo bash -s -- ${K3S_ADDITIONAL_ARGS}
 
     echo "Setting KUBECONFIG in rcfiles"
     for rcfile in "${RC_FILES[@]}"; do
